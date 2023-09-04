@@ -4,18 +4,19 @@ using UnityEngine;
 
 public class LapCounter : MonoBehaviour
 {
-    public float totalRaceTime;
-    public float totalTimerTimestamp;
-    public float lapTimerTimestamp; // Tiempo en el que se inicia una vuelta.
-    public float currentLapTime; // Tiempo transcurrido en la vuelta actual.
-    public float lastLapTime; // Tiempo de la última vuelta
-    public float bestLapTime = float.MaxValue; // Mejor tiempo de vuelta
+    RaceManager raceManager; // Referencia a la clase RaceManager
+
+    [HideInInspector] public float totalRaceTime; // Tiempo total de carrera
+    [HideInInspector] public float totalTimerTimestamp; // Tiempo en el que se inicia la carrera
+    [HideInInspector] public float currentLapTime; // Tiempo transcurrido en la vuelta actual
+    [HideInInspector] public float lapTimerTimestamp; // Tiempo en el que se inicia una vuelta
+    [HideInInspector] public float lastLapTime; // Tiempo de la última vuelta
+    [HideInInspector] public float bestLapTime = float.MaxValue; // Mejor tiempo de vuelta
     [HideInInspector] public float averageLapTime; // Tiempo de vuelta promedio
 
-    public List<float> lapTimes = new List<float>(); // Lista de tiempos de vueltas completadas
+    private List<float> lapTimes = new List<float>(); // Lista de tiempos de vueltas completadas
 
-    private bool raceOngoing;
-    RaceManager raceManager;
+    private bool raceOngoing; // Indica si la carrera está en marcha
 
     void Start()
     {
@@ -40,16 +41,18 @@ public class LapCounter : MonoBehaviour
         }
     }
 
+    // Empezar vuelta
     public void StartLap()
     {
         lapTimerTimestamp = Time.time;
         if (lapTimes.Count == 0) // si empieza la primera vuelta
         {
-            raceOngoing = true;
+            raceOngoing = true; // activamos la variable de carrera en marcha
             totalTimerTimestamp = lapTimerTimestamp;
         }
     } 
 
+    // Finalizar vuelta
     public void EndLap()
     {
         lastLapTime = Time.time - lapTimerTimestamp; // Tiempo de la ultima vuelta
@@ -58,7 +61,7 @@ public class LapCounter : MonoBehaviour
         averageLapTime = CalculateAverageLapTime(); // Calcular tiempo de vuelta promedio
         if (lapTimes.Count == raceManager.totalLaps)
         {
-            raceOngoing = false;
+            raceOngoing = false; // desactivamos la variable de carrera en marcha
         }
 
         if (gameObject.CompareTag("Player"))
@@ -69,6 +72,7 @@ public class LapCounter : MonoBehaviour
         }
     }
 
+    // Calcular tiempo de vuelta promedio
     public float CalculateAverageLapTime()
     {
         if (lapTimes.Count == 0)
@@ -83,8 +87,6 @@ public class LapCounter : MonoBehaviour
         }
 
         return totalLapTime / lapTimes.Count;
-    }
-
-    
+    } 
 
 }

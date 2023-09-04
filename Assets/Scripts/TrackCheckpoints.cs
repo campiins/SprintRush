@@ -5,16 +5,16 @@ using System;
 
 public class TrackCheckpoints : MonoBehaviour
 {
-    public GameObject checkpointsContainer;
-    public List<Transform> checkpoints;
-    public int currentCheckpoint;
-    public int lastCheckpoint;
-    public int currentLap;
-    public bool hasFinished = false;
+    private GameObject checkpointsContainer; // Objeto contenedor de los puntos de control
+    [HideInInspector] public List<Transform> checkpoints; // Lista de puntos de control
+    [HideInInspector] public int currentCheckpoint; // Punto de control actual
+    private int lastCheckpoint; // Último punto de control alcanzado
+    [HideInInspector] public int currentLap; // Número de vuelta actual
+    [HideInInspector] public bool hasFinished = false; // Indicador de carrera finalizada
 
     private LapCounter lapCounter; // Referencia a la clase LapCounter
 
-    private Vector3 respawnPosition; // Posición de respawn del vehículo
+    private Vector3 respawnPosition; // Posición de restablecimiento del coche
 
     public event EventHandler<CarCheckpointEventArgs> OnCarCorrectCheckpoint;
     public event EventHandler<CarCheckpointEventArgs> OnCarWrongCheckpoint;
@@ -37,9 +37,9 @@ public class TrackCheckpoints : MonoBehaviour
         currentLap = 0;
     }
 
+    // Restablecer posición del coche a la posición último punto de control alcanzado
     public void ResetPosition()
     {
-        // Resetear el vehículo a la posición y rotación del último checkpoint pasado
         if (currentLap != 0)
         {
             Transform respawnCheckpoint = checkpoints[lastCheckpoint];
@@ -47,7 +47,7 @@ public class TrackCheckpoints : MonoBehaviour
             transform.rotation = respawnCheckpoint.rotation;
             respawnPosition = respawnCheckpoint.position; // Actualizar la posición de respawn
 
-            // Realizar un Raycast hacia abajo para encontrar la superficie del suelo
+            // Lanzar un Raycast hacia abajo para encontrar la superficie del suelo
             RaycastHit hit;
             if (Physics.Raycast(respawnPosition, -Vector3.up, out hit))
             {
@@ -56,20 +56,18 @@ public class TrackCheckpoints : MonoBehaviour
                 transform.position = hit.point + hit.normal * groundOffset;
             }
 
-            Rigidbody rb = GetComponent<Rigidbody>();
-            rb.velocity = Vector3.zero; // Establecer la velocidad lineal en cero
-            rb.angularVelocity = Vector3.zero; // Establecer la velocidad angular en cero
+            GetComponent<CarController>().StopCompletely(); // Detener la velocidad del coche
         }
     }
 
+    // Detectar cuando el coche pasa por un punto de control
     void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Checkpoint"))
         {
-
             if (currentCheckpoint < checkpoints.Count - 1) // Verificar si el coche aun no ha pasado por todos los checkpoints
             {
-                if (other.GetComponent<CheckpointData>().checkpointIndex == currentCheckpoint) // Si el checkpoint que 'visitas' no ha sido 'visitado'
+                if (other.GetComponent<CheckpointData>().checkpointIndex == currentCheckpoint) // Si el checkpoint por el que pasa el coche no ha sido 'visitado'
                 {
                     lastCheckpoint = currentCheckpoint; // Establecer ultimo checkpoint
 
@@ -102,6 +100,7 @@ public class TrackCheckpoints : MonoBehaviour
         }
     }
 
+    // Obtener siguiente checkpoint
     public Transform GetNextCheckpoint(Transform carTransform)
     {
         if (currentCheckpoint < checkpoints.Count)
@@ -113,6 +112,7 @@ public class TrackCheckpoints : MonoBehaviour
         return checkpoints[0];
     }
 
+    // Reiniciar checkpoint para el entrenamiento
     public void ResetCheckpoint(Transform carTransform)
     {
         currentCheckpoint = 0;

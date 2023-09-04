@@ -4,29 +4,30 @@ using UnityEngine;
 
 public class EngineAudio : MonoBehaviour
 {
-    public AudioSource runningSound;
-    public float runningMaxVolume;
-    public float runningMaxPitch;
-    [SerializeField] private float pitchSmoothTime;
+    public AudioSource runningSound; // Fuente de audio del coche en marcha
+    public float runningMaxVolume; // Volumen maximo del coche en marcha
+    public float runningMaxPitch; // Pitch maximo del coche en marcha 
     
-    public AudioSource idleSound;
-    public float idleMaxVolume;
+    public AudioSource idleSound; // Fuente de audio del coche en ralentí
+    public float idleMaxVolume; // Volumen maximo del coche en ralentí
 
-    public AudioSource reverseSound;
-    public float reverseMaxVolume;
-    public float reverseMaxPitch;
-
-    private float speedRatio;
-
-    private float revLimiter;
-    public float LimiterSound = 3f;
-    public float LimiterFrequency = 10f;
-    public float LimiterEngage = 0.8f;
+    public AudioSource reverseSound; // Fuente de audio del coche en marcha atrás
+    public float reverseMaxVolume; // Volumen maximo del coche en marcha atrás
+    public float reverseMaxPitch; // Pitch maximo del coche en marcha atrás
     
-    public bool isEngineRunning = false;
-    public AudioSource startingSound;
+    [SerializeField] private float pitchSmoothTime; // Tiempo de suavizado del pitch
 
-    [HideInInspector] public CarController carController;
+    private float engineRPMRatio; // Relación de las RPM del motor ajustadas
+
+    private float revLimiter; // Limitador de revoluciones
+    public float LimiterSound = 3f; // Valor multiplicador del limitador
+    public float LimiterFrequency = 10f; // Frecuencia del limitador
+    public float LimiterEngage = 0.8f; // Valor de activación del limitador
+    
+    public bool isEngineRunning = false; // Indica si el motor está encendido
+    public AudioSource startingSound; // Fuente de audio de arranque del motor
+
+    [HideInInspector] public CarController carController; // Referencia a la clase CarController
 
     // Start is called before the first frame update
     void Start()
@@ -40,32 +41,32 @@ public class EngineAudio : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        float speedSign = 0;
+        float speedSign = 0; // Dirección de movimiento del coche
         if (carController)
         {
             speedSign = carController.movingDirection;
-            speedRatio = Mathf.Abs(carController.CalculateEngineRPMRatio());
+            engineRPMRatio = Mathf.Abs(carController.CalculateEngineRPMRatio());
         }
-        if (speedRatio > LimiterEngage)
+        if (engineRPMRatio > LimiterEngage)
         {
-            revLimiter = (Mathf.Sin(Time.time * LimiterFrequency) + 2f) * LimiterSound * (speedRatio - LimiterEngage);
+            revLimiter = (Mathf.Sin(Time.time * LimiterFrequency) + 2f) * LimiterSound * (engineRPMRatio - LimiterEngage);
         }
         if (isEngineRunning)
         {
-            idleSound.volume = Mathf.Lerp(0.1f, idleMaxVolume, speedRatio);
+            idleSound.volume = Mathf.Lerp(0.1f, idleMaxVolume, engineRPMRatio);
             if (speedSign > 0)
             {
                 reverseSound.volume = 0;
-                idleSound.volume = Mathf.Lerp(idleSound.volume, 0.1f, speedRatio);
-                runningSound.volume = Mathf.Lerp(0f, runningMaxVolume, speedRatio);
-                runningSound.pitch = Mathf.Lerp(runningSound.pitch, Mathf.Lerp(0.3f, runningMaxPitch, speedRatio) + revLimiter, Time.deltaTime * pitchSmoothTime);
+                idleSound.volume = Mathf.Lerp(idleSound.volume, 0.1f, engineRPMRatio);
+                runningSound.volume = Mathf.Lerp(0f, runningMaxVolume, engineRPMRatio);
+                runningSound.pitch = Mathf.Lerp(runningSound.pitch, Mathf.Lerp(0.3f, runningMaxPitch, engineRPMRatio) + revLimiter, Time.deltaTime * pitchSmoothTime);
             }
             else
             {
                 runningSound.volume = 0;
-                idleSound.volume = Mathf.Lerp(0.1f, idleMaxVolume, speedRatio);
-                reverseSound.volume = Mathf.Lerp(0f, reverseMaxVolume, speedRatio);
-                reverseSound.pitch = Mathf.Lerp(reverseSound.pitch, Mathf.Lerp(0.2f, reverseMaxPitch, speedRatio) + revLimiter, Time.deltaTime * pitchSmoothTime);
+                idleSound.volume = Mathf.Lerp(0.1f, idleMaxVolume, engineRPMRatio);
+                reverseSound.volume = Mathf.Lerp(0f, reverseMaxVolume, engineRPMRatio);
+                reverseSound.pitch = Mathf.Lerp(reverseSound.pitch, Mathf.Lerp(0.2f, reverseMaxPitch, engineRPMRatio) + revLimiter, Time.deltaTime * pitchSmoothTime);
             }
         }
         else
@@ -74,6 +75,8 @@ public class EngineAudio : MonoBehaviour
             runningSound.volume = 0;
         }
     }
+
+    // Corrutina para encender el motor
     public IEnumerator StartEngine()
     {
         if (carController)
@@ -87,6 +90,7 @@ public class EngineAudio : MonoBehaviour
         }
     }
 
+    // Corrutina para detener el motor
     public IEnumerator StopEngine()
     {
         carController.isEngineRunning = 1;

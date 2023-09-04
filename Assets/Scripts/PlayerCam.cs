@@ -4,16 +4,15 @@ using UnityEngine;
 
 public class PlayerCam : MonoBehaviour
 {
-    private RaceManager raceManager;
-    private GameObject playerCar;
-    private Transform cameraTransform;
-    public GameObject playerCameras;
-    public GameObject rearCameras;
+    private RaceManager raceManager; // Componente RaceManager
+    private GameObject playerCar; // Coche del jugador
+    private GameObject playerCameras; // Objeto que contiene las camaras del jugador
+    private GameObject rearCameras; // Objeto que contiene las camaras traseras del jugador
 
-    public List<Transform> camPositions;
-    private int currentCamIndex = 0;
+    [HideInInspector] public List<Transform> camPositions; // Lista de posiciones de camaras
+    private int currentCamIndex = 0; // Indice de camara actual
 
-    public List<Transform> rearPositions;
+    [HideInInspector] public List<Transform> rearPositions; // Lista de posiciones de camaras traseras
 
     public float distance = 6.4f; // Distancia de la camara al coche
     public float height = 1.4f; // Altura de la camara respecto al coche
@@ -23,8 +22,8 @@ public class PlayerCam : MonoBehaviour
     public float defaultFOV = 60f; // Campo de vision por defecto de la camara
     private Vector3 rotationVector; // Vector que almacena los angulos de rotacion para la camara
 
-    private float originalRotationDamping;
-    private float originalHeightDamping;
+    private float originalRotationDamping; // Amortiguacion de rotacion original
+    private float originalHeightDamping; // Amortiguacion de altura original
 
 
     // Start is called before the first frame update
@@ -32,11 +31,11 @@ public class PlayerCam : MonoBehaviour
     {
         raceManager = FindObjectOfType<RaceManager>();
         raceManager.OnPlayerSpawned += OnPlayerSpawned;
-        cameraTransform = gameObject.transform;
         originalRotationDamping = rotationDamping;
         originalHeightDamping = heightDamping;
     }
 
+    // Obtener camaras cuando el coche del jugador aparece
     void OnPlayerSpawned(GameObject player)
     {
         playerCar = player;
@@ -56,7 +55,7 @@ public class PlayerCam : MonoBehaviour
     // Update is called once per frame
     void LateUpdate()
     {
-        if (playerCar.GetComponent<InputManager>().isRearview)
+        if (playerCar.GetComponent<InputManager>().isRearview) // Configurar camara trasera
         {
             Rearview();
 
@@ -64,13 +63,13 @@ public class PlayerCam : MonoBehaviour
             rotationDamping = 500;
             heightDamping = 500;
         }
-        else if (currentCamIndex > 0)
+        else if (currentCamIndex > 0) // Configurar cámara de capó y de parachoques
         {
             GetComponent<Camera>().fieldOfView = defaultFOV;
             transform.position = GetCurrentCameraPosition().position;
             transform.rotation = GetCurrentCameraPosition().rotation;
         }
-        else
+        else // Configurar cámara exterior
         {
             float wantedAngle = rotationVector.y; // Obtener el angulo de rotacion deseado para la camara
             float wantedHeight = playerCar.transform.position.y + height; // Obtener altura deseada para la camara
@@ -106,7 +105,6 @@ public class PlayerCam : MonoBehaviour
 
     private void FixedUpdate()
     {
-        
         if (currentCamIndex == 0) // camara exterior
         {
             // Obtener la velocidad local del coche en su propio sistema de coordenadas
@@ -124,12 +122,13 @@ public class PlayerCam : MonoBehaviour
         }
     }
 
+    // Cambiar camara del coche del jugador
     public void ChangeCamera()
     {
         // Verificar si hay posiciones de camara en la lista
         if (camPositions.Count == 0)
         {
-            Debug.LogWarning("No camera positions available.");
+            Debug.LogWarning("No hay camaras asignadas");
             return;
         }
 
@@ -142,16 +141,17 @@ public class PlayerCam : MonoBehaviour
         transform.rotation = nextCamPosition.rotation;
     }
 
+    // Cambiar camara a la camara trasera
     public void Rearview()
     {
         // Verificar si hay posiciones de camara trasera en la lista
         if (camPositions.Count == 0)
         {
-            Debug.LogWarning("No rearview positions available.");
+            Debug.LogWarning("No hay camaras traseras asignadas");
             return;
         }
 
-        // Obtener la posición de la cámara trasera correspondiente según las condiciones
+        // Obtener la posición de la cámara trasera correspondiente según la cámara actual
         Transform rearCamPosition = currentCamIndex == 0 ? rearPositions[0] : rearPositions[1];
 
         // Mover la cámara a la nueva posición de la cámara trasera
@@ -159,17 +159,9 @@ public class PlayerCam : MonoBehaviour
         transform.rotation = rearCamPosition.rotation;
     }
 
+    // Obtener cámara actual
     public Transform GetCurrentCameraPosition()
     {
         return camPositions[currentCamIndex];
-    }
-
-    public void FinishCam()
-    {
-        //currentCamIndex = 0;
-        //rotationVector.y = playerCar.transform.eulerAngles.y + 180f;
-        this.enabled = false;
-        cameraTransform.position = Vector3.Lerp(cameraTransform.transform.position, cameraTransform.position, 0.5f);
-        cameraTransform.rotation = Quaternion.Lerp(cameraTransform.transform.rotation, cameraTransform.rotation, 0.5f);
     }
 }

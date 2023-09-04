@@ -34,19 +34,18 @@ public class UIManager : MonoBehaviour
         lapCounter = carController.GetComponent<LapCounter>();
 
     }
-
-    void OnAISpawned(GameObject opponent)
+    void OnAISpawned(GameObject carAI)
     {
-        //
+        // --
     }
 
     // Update is called once per frame
     void Update()
     {
+        // SPEED
         speed.text = Mathf.RoundToInt(carController.speedClamped).ToString();
 
-        // LAPS
-
+        // RACE TIMES
         float totalTimeSpan = lapCounter.totalRaceTime;
         int minutes = Mathf.FloorToInt(totalTimeSpan / 60);
         int seconds = Mathf.FloorToInt(totalTimeSpan % 60);
@@ -89,6 +88,7 @@ public class UIManager : MonoBehaviour
         playerPosition.text = carController.racePosition + " / " + raceManager.vehiclePositions.Count;
     }
 
+    // Salir al menu principal
     public void ExitToMainMenu()
     {
         SceneManager.LoadScene("MainMenu");

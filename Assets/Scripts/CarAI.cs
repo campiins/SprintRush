@@ -7,26 +7,26 @@ using TMPro;
 public class CarAI : MonoBehaviour
 {
     private CarController carController; // Componente CarController del coche
-    public Transform cam; // Referencia a la cámara
+    private Transform cam; // Referencia a la cámara
     private Canvas canvas; // Componente Canvas para mostrar nombre y posición del coche
-    [SerializeField] private TMP_Text UIName; // Texto para mostrar el nombre del coche de la IA
-    [SerializeField] private TMP_Text UIPosition; // Texto para mostrar la posición en carrera
+    private TMP_Text UIName; // Texto para mostrar el nombre del coche de la IA
+    private TMP_Text UIPosition; // Texto para mostrar la posición en carrera
     public string AIName; // Nombre del coche de la IA
 
-    public Raceline raceline; // Componente Raceline que contiene información sobre la trayectoria que el coche debe seguir
-    public Node currentNode; // Nodo actual o objetivo que el coche debe alcanzar
-    public List<Node> nodes = new List<Node>(); // Lista de nodos en la trayectoria
+    private Raceline raceline; // Componente Raceline que contiene información sobre la trayectoria que el coche debe seguir
+    private Node currentNode; // Nodo actual o objetivo que el coche debe alcanzar
+    private List<Node> nodes = new List<Node>(); // Lista de nodos en la trayectoria
 
-    [Range(-1, 1)] public float forwardAmount = 0f; // Controla el acelerador del coche
-    [Range(-1, 1)][SerializeField] private float turnAmount = 0f; // Controla el giro del coche
+    [Range(-1, 1)] private float forwardAmount = 0f; // Controla el acelerador del coche
+    [Range(-1, 1)] private float turnAmount = 0f; // Controla el giro del coche
     public float steerForce; // Controla la fuerza de giro del coche. Funciona en el rango [0,2].
-    [HideInInspector] public float velocity = 0; // Utilizada para el cálculo suave del giro
     private float originalMaxSpeed; // Máxima velocidad original del coche
     private bool hasAppliedBoost = false; // Controla si se ha aplicado el efecto de rebufo previamente
+    private float velocity = 0; // Utilizada para el cálculo suave del giro
 
     public float distanceToReachNode = 20f; // Distancia a la que se considera que ha alcanzado un nodo
 
-    public float maxTimeOffGround = 5.0f; // Tiempo máximo que el coche puede estar quieto o sin tocar el suelo antes de reaparecer
+    private float maxTimeOffGround = 5.0f; // Tiempo máximo que el coche puede estar quieto o sin tocar el suelo antes de reaparecer
     private float timeOffGround = 0.0f; // Contador de tiempo
 
     [Header("Sensors")]
@@ -70,12 +70,13 @@ public class CarAI : MonoBehaviour
         Steer();
         Accelerate();
 
+        // Aplicar valores de acelerador y dirección
         if (FindObjectOfType<RaceManager>() != null && !GetComponent<TrackCheckpoints>().hasFinished)
         {
             carController.SetInputs(forwardAmount, turnAmount);
         }
 
-        // Comprobar si la velocidad es menor que 5 o si el coche no está en el suelo
+        // Comprobar si la velocidad es menor que 10 kmh o si el coche no está en el suelo
         if (carController.GetSpeed() < 10 || !carController.isGrounded())
         {
             // Incrementar el contador de tiempo
@@ -91,7 +92,7 @@ public class CarAI : MonoBehaviour
         }
         else
         {
-            // Si el coche está en el suelo y/o la velocidad es mayor o igual a 5, reiniciar el contador
+            // Si el coche está en el suelo y/o la velocidad es mayor o igual a 10 kmh, reiniciar el contador
             timeOffGround = 0.0f;
         }
     }
@@ -109,6 +110,7 @@ public class CarAI : MonoBehaviour
         UIPosition.text = carController.GetRacePosition().ToString();
     }
 
+    // Calcular valor de dirección del coche
     private void Steer()
     {
         Vector3 relativeVector = transform.InverseTransformPoint(currentNode.transform.position);
@@ -117,6 +119,7 @@ public class CarAI : MonoBehaviour
         turnAmount = Mathf.SmoothDamp(turnAmount, newSteer, ref velocity, Time.deltaTime * 2);
     }
 
+    // Calcular valor de aceleración del coche
     private void Accelerate()
     {
         Vector3 position = gameObject.transform.position;
@@ -124,52 +127,57 @@ public class CarAI : MonoBehaviour
         Vector3 forwardDirection = transform.forward;
         float angle = Vector3.Angle(forwardDirection, directionToCurrentNode);
 
-        // Si el ángulo es menor a un cierto umbral (por ejemplo, 10 grados), entonces acelera.
+        // Si el ángulo es menor a un cierto umbral (por ejemplo, 5 grados) o la velocidad es menor a 100 kmh, acelerar
         if (angle < 5f || carController.GetSpeed() < 100f)
         {
             forwardAmount = Mathf.Lerp(forwardAmount, 1f, Time.deltaTime * 4);
         }
         else
         {
-            // Si el ángulo es mayor o igual al umbral, el coche no acelera.
+            // Si el ángulo es mayor o igual al umbral y la velocidad es mayor a 100 khm, el coche deja de acelerar
             forwardAmount = Mathf.Lerp(forwardAmount, 0f, Time.deltaTime * 2);
         }
 
+        // Calcular distancia entre el ultimo nodo alcanzado y el nodo actual
         float distanceBetweenNodes = Vector3.Distance(currentNode.previousNode.transform.position, currentNode.transform.position);
 
-        if (distanceBetweenNodes < 33f)
+        if (distanceBetweenNodes < 33f) // Si la distancia entre nodos es menor a 33
         {
-            // Ajusta el valor de forwardAmount para reducir la aceleración en las curvas cerradas.
+            // Ajustar el valor del acelerador para reducir la aceleración en las curvas cerradas
             forwardAmount = 0.3f;
 
-            if (distanceBetweenNodes < 25)
+            if (distanceBetweenNodes < 25f) // Si la distancia entre nodos es menor a 25
             {
+                // Dejar de acelerar, y frenar un poco si la velocidad es mayor a 220 kmh
                 forwardAmount = Mathf.Lerp(forwardAmount, 0f, Time.deltaTime * 2);
-                if (carController.GetSpeed() > 220)
+                if (carController.GetSpeed() > 220f)
                 {
                     forwardAmount = -0.3f;
                 }
 
             }
-            if (carController.GetSpeed() > 250)
+            // Frenar si la velocidad es mayor a 250 kmh
+            if (carController.GetSpeed() > 250f) 
             {
                 forwardAmount = -0.9f;
             }
         }
     }
 
+    // Calcular nodo actual
     private void CalculateCurrentNode()
     {
         Vector3 position = gameObject.transform.position;
         float distanceToNode = Vector3.Distance(position, currentNode.transform.position);
         
-        if (distanceToNode < distanceToReachNode)
+        if (distanceToNode < distanceToReachNode) // Si la distancia hasta el nodo actual es menor a la distancia necesaria para alcanzar un nodo
         {
-            // Ir al siguiente nodo
+            // Cambiar nodo actual al siguiente nodo
             currentNode = currentNode.nextNode;
         }
     }
 
+    // Añadir funcionalidad de los sensores frontales
     private void AddFrontSensors()
     {
         Vector3 sensorPosition = frontSensors.transform.position;
@@ -182,7 +190,6 @@ public class CarAI : MonoBehaviour
         // Raycast central hacia adelante
         if (Physics.Raycast(sensorPosition, forwardDirection, out hit, rayLength * 1.5f, layerMask))
         {
-            //Debug.Log("Raycast centro ha golpeado algo: " + hit.collider.gameObject.name);
             Gizmos.color = Color.red;
 
             if (hit.collider.gameObject.layer == LayerMask.NameToLayer("Car"))
@@ -228,6 +235,7 @@ public class CarAI : MonoBehaviour
         {
             Gizmos.color = Color.green;
 
+            // Dejar de aplicar rebufo
             if (carController.GetMaxSpeed() > originalMaxSpeed)
             {
                 carController.SetMaxSpeed(originalMaxSpeed);
@@ -240,10 +248,7 @@ public class CarAI : MonoBehaviour
         // Raycast a la izquierda
         if (Physics.Raycast(sensorPosition - transform.right * distanceFromCenter, forwardDirection, out hit, rayLength, layerMask))
         {
-            //Debug.Log("Raycast centro izquierda ha golpeado algo: " + hit.collider.gameObject.name);
             Gizmos.color = Color.red;
-
-            //turnAmount = Mathf.Lerp(forwardAmount, 0.5f, Time.deltaTime);
 
             if (hit.collider.gameObject.layer == LayerMask.NameToLayer("Car"))
             {
@@ -252,21 +257,21 @@ public class CarAI : MonoBehaviour
                     forwardAmount = -1f; // frenar
                 }
 
-                if (hit.distance < 15f)
+                if (hit.distance < 15f) // Si esta a menos de 15 unidades de distancia de otro coche
                 {
-                    turnAmount = Mathf.Lerp(turnAmount, 1f, Time.deltaTime * 2);
+                    turnAmount = Mathf.Lerp(turnAmount, 1f, Time.deltaTime * 2); // Girar a la derecha
                 }
             }
 
-            if (carController.reverse)
+            if (carController.reverse) // Si esta yendo marcha atras
             {
-                turnAmount = Mathf.Lerp(turnAmount, -1f, Time.deltaTime * 2);
+                turnAmount = Mathf.Lerp(turnAmount, -1f, Time.deltaTime * 2); // Girar a la izquierda
             }
-            else
+            else // Si va hacia delante
             {
-                if (carController.GetSpeed() < 20)
+                if (carController.GetSpeed() < 20) // Si la velocidad es menor a 20 kmh
                 {
-                    turnAmount = Mathf.Lerp(turnAmount, 1f, Time.deltaTime * 2);
+                    turnAmount = Mathf.Lerp(turnAmount, 1f, Time.deltaTime * 2); // Girar a la derecha
                 }
             }
         }
@@ -279,10 +284,7 @@ public class CarAI : MonoBehaviour
         // Raycast a la derecha
         if (Physics.Raycast(sensorPosition + transform.right * distanceFromCenter, forwardDirection, out hit, rayLength, layerMask))
         {
-            //Debug.Log("Raycast centro derecha ha golpeado algo: " + hit.collider.gameObject.name);
             Gizmos.color = Color.red;
-
-            //turnAmount = Mathf.Lerp(forwardAmount, -0.5f, Time.deltaTime);
 
             if (hit.collider.gameObject.layer == LayerMask.NameToLayer("Car"))
             {
@@ -291,21 +293,21 @@ public class CarAI : MonoBehaviour
                     forwardAmount = -1f; // frenar
                 }
 
-                if (hit.distance < 15f)
+                if (hit.distance < 15f) // Si esta a menos de 15 unidades de distancia de otro coche
                 {
-                    turnAmount = Mathf.Lerp(turnAmount, -1f, Time.deltaTime * 2);
+                    turnAmount = Mathf.Lerp(turnAmount, -1f, Time.deltaTime * 2);  // Girar a la izquierda
                 }
             }
 
-            if (carController.reverse)
+            if (carController.reverse) // Si esta yendo marcha atras
             {
-                turnAmount = Mathf.Lerp(turnAmount, 1f, Time.deltaTime * 2);
+                turnAmount = Mathf.Lerp(turnAmount, 1f, Time.deltaTime * 2); // Girar a la derecha
             }
-            else
+            else // Si va hacia delante
             {
-                if (carController.GetSpeed() < 20)
+                if (carController.GetSpeed() < 20) // Si la velocidad es menor a 20 kmh
                 {
-                    turnAmount = Mathf.Lerp(turnAmount, -1f, Time.deltaTime * 2);
+                    turnAmount = Mathf.Lerp(turnAmount, -1f, Time.deltaTime * 2); // Girar a la izquierda
                 }
             }
         }
@@ -323,24 +325,23 @@ public class CarAI : MonoBehaviour
         // Raycast a la izquierda
         if (Physics.Raycast(sensorPosition - transform.right * distanceFromCenter, leftDirection, out hit, rayLength, layerMask))
         {
-            //Debug.Log("Raycast izquierda ha golpeado algo: " + hit.collider.gameObject.name);
             Gizmos.color = Color.red;
 
-            if (forwardAmount > -0.9f) // si no esta frenando
+            if (forwardAmount > -0.9f) // si no esta frenando al maximo
             {
-                forwardAmount = 0.5f;
+                forwardAmount = 0.5f; // Acelerar a la mitad
             }
-            turnAmount = Mathf.Lerp(turnAmount, 0.5f, Time.deltaTime * 2);
-
-            if (carController.reverse)
+            turnAmount = Mathf.Lerp(turnAmount, 0.5f, Time.deltaTime * 2); // Girar a la derecha
+             
+            if (carController.reverse) // Si esta yendo marcha atras
             {
-                turnAmount = Mathf.Lerp(turnAmount, -1f, Time.deltaTime * 2);
+                turnAmount = Mathf.Lerp(turnAmount, -1f, Time.deltaTime * 2); // Girar a la izquierda
             }
-            else
+            else // Si va hacia delante
             {
-                if (carController.GetSpeed() < 20)
+                if (carController.GetSpeed() < 20) // Si la velocidad es menor a 20 kmh
                 {
-                    turnAmount = Mathf.Lerp(turnAmount, 1f, Time.deltaTime * 2);
+                    turnAmount = Mathf.Lerp(turnAmount, 1f, Time.deltaTime * 2); // Girar a la derecha
                 }
             }
         }
@@ -353,24 +354,23 @@ public class CarAI : MonoBehaviour
         // Raycast a la derecha
         if (Physics.Raycast(sensorPosition + transform.right * distanceFromCenter, rightDirection, out hit, rayLength, layerMask))
         {
-            //Debug.Log("Raycast derecha ha golpeado algo: " + hit.collider.gameObject.name);
             Gizmos.color = Color.red;
 
-            if (forwardAmount > -0.9f) // si no esta frenando
+            if (forwardAmount > -0.9f) // si no esta frenando al maximo
             {
-                forwardAmount = 0.5f;
+                forwardAmount = 0.5f; // Acelerar a la mitad
             }
-            turnAmount = Mathf.Lerp(turnAmount, -0.5f, Time.deltaTime * 2);
+            turnAmount = Mathf.Lerp(turnAmount, -0.5f, Time.deltaTime * 2); // Girar a la izquierda
 
-            if (carController.reverse)
+            if (carController.reverse) // Si esta yendo marcha atras
             {
-                turnAmount = Mathf.Lerp(turnAmount, 1f, Time.deltaTime * 2);
+                turnAmount = Mathf.Lerp(turnAmount, 1f, Time.deltaTime * 2); // Girar a la derecha
             }
-            else
+            else // Si va hacia delante
             {
-                if (carController.GetSpeed() < 20)
+                if (carController.GetSpeed() < 20) // Si la velocidad es menor a 20 kmh
                 {
-                    turnAmount = Mathf.Lerp(turnAmount, -1f, Time.deltaTime * 2);
+                    turnAmount = Mathf.Lerp(turnAmount, -1f, Time.deltaTime * 2); // Girar a la izquierda
                 }
             }
         }
@@ -384,6 +384,7 @@ public class CarAI : MonoBehaviour
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.yellow;
+        // Dibujar nodo actual
         if (currentNode != null)
             Gizmos.DrawWireSphere(currentNode.transform.position, 2);
     }

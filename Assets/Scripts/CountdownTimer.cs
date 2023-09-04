@@ -10,13 +10,6 @@ public class CountdownTimer : MonoBehaviour
     [SerializeField] AudioSource horn1;
     [SerializeField] AudioSource horn2;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        //StartCoroutine(Countdown());
-    }
-
-
     public IEnumerator Countdown(Action onCountdownFinished)
     {
         yield return new WaitForSeconds(0.5f);

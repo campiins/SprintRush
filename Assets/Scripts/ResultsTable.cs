@@ -33,6 +33,7 @@ public class ResultsTable : MonoBehaviour
         }
     }
 
+    // Actualizar tabla de resultados
     public void UpdateLeaderboard()
     {
         bestOverallLapTime = GetBestOverallLapTime();
@@ -134,6 +135,7 @@ public class ResultsTable : MonoBehaviour
         }
     }
 
+    // Obtener mejor tiempo de vuelta de la carrera
     private float GetBestOverallLapTime()
     {
         float bestTime = float.MaxValue;
@@ -153,6 +155,7 @@ public class ResultsTable : MonoBehaviour
         return bestTime;
     }
 
+    // Aplicar color purpura al mejor tiempo de vuelta de la carrera
     private void SetFastestLapColor(Transform resultEntry, float lapTime)
     {
         TMP_Text bestLapText = resultEntry.Find("BestLapText").GetComponent<TMP_Text>();
@@ -163,7 +166,7 @@ public class ResultsTable : MonoBehaviour
         }
         else
         {
-            bestLapText.color = Color.white; // Cambiar a otro color si no es el mejor tiempo
+            bestLapText.color = Color.white;
         }
     }
 

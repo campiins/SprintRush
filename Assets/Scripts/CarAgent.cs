@@ -82,54 +82,13 @@ public class CarAgent : Agent
 
     public override void OnActionReceived(ActionBuffers actions)
     {
-        //float forwardAmount = 0f;
-        //float turnAmount = 0f;
-
-        //switch (actions.DiscreteActions[0])
-        //{
-        //    case 0:
-        //        forwardAmount = 0f;
-        //        AddReward(-0.3f);
-        //        break;
-        //    case 1:
-        //        forwardAmount = 1f;
-        //        AddReward(0.0001f);
-        //        break;
-        //    case 2:
-        //        forwardAmount = -1f;
-        //        AddReward(-0.01f);
-        //        break;
-
-        //}
-        //switch (actions.DiscreteActions[1])
-        //{
-        //    case 0:
-        //        turnAmount = 0f;
-        //        break;
-        //    case 1:
-        //        turnAmount = 1f;
-        //        break;
-        //    case 2:
-        //        turnAmount = -1f;
-        //        break;
-        //}
-
         float forwardAmount = actions.ContinuousActions[0];
         float turnAmount = actions.ContinuousActions[1];
 
         forwardAmount = Mathf.Clamp(forwardAmount, -1f, 1f);
         turnAmount = Mathf.Clamp(turnAmount, -1f, 1f);
 
-        if (forwardAmount > 0)
-        {
-            //AddReward(carController.GetSpeed() * 0.0001f);
-        }
-        //else if (forwardAmount < 0)
-        //{
-        //    AddReward(-0.001f);
-        //    currentReward -= 0.001f;
-        //}
-        else
+        if (forwardAmount <= 0)
         {
             AddReward(-0.001f);
             currentReward -= 0.001f;
@@ -153,18 +112,6 @@ public class CarAgent : Agent
 
     public override void Heuristic(in ActionBuffers actionsOut)
     {
-        //int forwardAction = 0;
-        //if (Input.GetKey(KeyCode.W)) forwardAction = 1;
-        //if (Input.GetKey(KeyCode.S)) forwardAction = 2;
-
-        //int turnAction = 0;
-        //if (Input.GetKey(KeyCode.D)) turnAction = 1;
-        //if (Input.GetKey(KeyCode.A)) turnAction = 2;
-
-        //ActionSegment<int> discreteActions = actionsOut.DiscreteActions;
-        //discreteActions[0] = forwardAction;
-        //discreteActions[1] = turnAction;
-
         float forwardAction = Input.GetAxis("Vertical");
         float turnAction = Input.GetAxis("Horizontal");
 
@@ -181,12 +128,11 @@ public class CarAgent : Agent
             SetReward(-1f);
             currentReward = -1;
             Debug.Log("hit " + collision.gameObject.name + ". Choque contra muro piedra.");
-            //Debug.Log(currentReward);
             EndEpisode();
         }
         if (collision.gameObject.CompareTag("AI"))
         {
-            // Ha chocado contra un muro
+            // Ha chocado contra otro coche de la IA
             SetReward(-3f);
             Debug.Log("hit " + collision.gameObject.name + ". Choque contra coche.");
             EndEpisode();

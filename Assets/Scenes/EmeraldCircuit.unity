@@ -12236,8 +12236,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b0683a348a3a2a4d805564914917cfd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerCameras: {fileID: 0}
-  rearCameras: {fileID: 0}
   camPositions: []
   rearPositions: []
   distance: 9
@@ -12882,28 +12880,22 @@ MonoBehaviour:
   totalLaps: 3
   numberOfRivals: 3
   maxNumberOfRivals: 3
-  availableNames:
-  - L. Weber
-  - I. Rossi
-  - M. Schmitt
-  - M. Petrov
-  - A. Marti
-  - S. Wagner
-  - K. Tenma
-  - P. Martinez
-  - F. Muller
-  - T. Bull
-  - A. Aanei
-  - G. Moreau
+  availableAINames:
+  - F. Vergalini
+  - R. McKing
+  - F. Nano
+  - S. Sinfaro
+  - L. Mento
+  - A. Trozado
+  - A. Migos
+  - T. Verde
   playerController: {fileID: 0}
   vehiclePositions: []
-  finishedVehicles: []
   startPositionsContainer: {fileID: 1047858993}
   startPositions: []
   playerCarPrefab: {fileID: 7799288954373493341, guid: 12a5c0aff0b5b694da6c04614a6a2386, type: 3}
   AICarPrefab: {fileID: 2565127395941872710, guid: a3758e40589b01b4ea7e9f9cd0c3651b, type: 3}
-  spawn: 1
-  isShowingResults: 0
+  spawnCars: 1
 --- !u!4 &814030689
 Transform:
   m_ObjectHideFlags: 0
@@ -26506,7 +26498,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.13333334, g: 0.13333334, b: 0.13333334, a: 0.9607843}
+  m_Color: {r: 0.13333334, g: 0.13333334, b: 0.13333334, a: 0.99607843}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1

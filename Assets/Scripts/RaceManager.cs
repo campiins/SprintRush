@@ -9,28 +9,26 @@ public class RaceManager : MonoBehaviour
     public int numberOfRivals = 3; // Numero total de rivales
     [HideInInspector] public int maxNumberOfRivals = 3; // Numero maximo de rivales (por ahora no pueden haber mas de 3 porque no hay mas posiciones de salida asignadas)
 
-    public List<string> availableNames; // Nombres para la IA
+    public List<string> availableAINames; // Nombres para la IA
     private List<string> usedNames = new List<string>();
 
     [HideInInspector] public CarController playerController; // Referencia a la clase CarController del coche del jugador
     private TrackCheckpoints trackCheckpoints; // Referencia a la clase TrackCheckpoints
-    public List<GameObject> vehiclePositions; // Lista de coches ordenada por posicion de carrera
-    public List<GameObject> finishedVehicles; // Almacena los coches que han finalizado
-
+    private CountdownTimer countdownTimer; // Referencia a la clase CountdownTimer
+    
+    [HideInInspector] public List<GameObject> vehiclePositions; // Lista de coches ordenada por posicion de carrera
+    private List<GameObject> finishedVehicles; // Almacena los coches que han finalizado
 
     [SerializeField] private GameObject startPositionsContainer; // GameObject que contiene las posiciones de salida
     [HideInInspector] public List<Transform> startPositions; // Lista de posiciones de salida
 
-    private CountdownTimer countdownTimer;
-    private int finishedCarsCount = 0; // contador de vehiculos que han finalizado la carrera
+    [SerializeField] private GameObject playerCarPrefab; // Prefab del coche del jugador
+    [SerializeField] private GameObject AICarPrefab; // Prefab del coche de los rivales
+    public event Action<GameObject> OnPlayerSpawned; // Evento de spawn del coche del jugador
+    public event Action<GameObject> OnAISpawned; // Evento de spawn de los coches de la IA
 
-    public GameObject playerCarPrefab; // Prefab del coche del jugador
-    public GameObject AICarPrefab; // Prefab del coche de los rivales
-    public event Action<GameObject> OnPlayerSpawned;
-    public event Action<GameObject> OnAISpawned;
-
-    public bool spawn;
-    public bool isShowingResults = false;
+    public bool spawnCars = true; // Indica si se pueden spawnear los coches (Desactivar solo en caso de prueba) 
+    private bool isShowingResults = false; // Indica si se estan mostrando los resultados de la carrera
 
     private void Awake()
     {
@@ -41,13 +39,13 @@ public class RaceManager : MonoBehaviour
             startPositions.Add(startPosition);
         }
 
-        finishedVehicles = new List<GameObject>(); // Inicializa la lista de coches terminados
+        finishedVehicles = new List<GameObject>(); // Inicializa la lista de coches que han finalizado la carrera
     }
 
     // Start is called before the first frame update
     void Start()
     {
-        if (spawn)
+        if (spawnCars)
         {
             SpawnCars();
             // Iniciar la corrutina Countdown
@@ -69,15 +67,13 @@ public class RaceManager : MonoBehaviour
                 {
                     vehicleCheckpoints.hasFinished = true; // Marcar que el vehiculo ha finalizado
                     finishedVehicles.Add(vehicleCheckpoints.gameObject); // Añadir vehiculo a lista de vehiculos que han finalizado la carrera
-                    finishedCarsCount++; // Sumar solo una vez por vehiculo que haya finalizado
 
+                    // Apagar motor
                     if (vehicle.GetComponent<EngineAudio>().isEngineRunning) StartCoroutine(vehicle.GetComponent<EngineAudio>().StopEngine());
 
                     if (vehicle.GetComponent<CarController>() == playerController)
                     {
-                        // El jugador ha finalizado la carrera
-                        //playerCam.FinishCam(); // Aplicar la camara de final de carrera
-                        
+                        // El jugador ha finalizado la carrera                       
                         playerController.gameObject.GetComponent<InputManager>().canUseInput = false; // Desactivar inputs de acelerador y freno al jugador
                     }
 
@@ -90,10 +86,12 @@ public class RaceManager : MonoBehaviour
 
                     if (!isShowingResults && playerController.GetComponent<TrackCheckpoints>().hasFinished)
                     {
+                        // Mostrar resultados si el jugador ha finalizado la carrera
                         StartCoroutine(ShowResults());
                     }
                     else
                     {
+                        // Si es otro coche el que ha finalizado, actualizar tabla de resultados
                         UpdateTable();
                     }
                 }
@@ -103,6 +101,7 @@ public class RaceManager : MonoBehaviour
         UpdateRacePositions(); // Actualizar posiciones de carrera
     }
 
+    // Instanciar coches en las posiciones de salida
     void SpawnCars()
     {
         int numberOfCars = Mathf.Clamp(numberOfRivals, 0, startPositions.Count - 1) + 1; // Incluye al coche del jugador
@@ -123,15 +122,15 @@ public class RaceManager : MonoBehaviour
             if (i != playerStartPositionIndex) // Saltar la posición del jugador
             {
                 // Elegir un nombre aleatorio de la lista de nombres disponibles
-                int randomIndex = UnityEngine.Random.Range(0, availableNames.Count);
-                string randomName = availableNames[randomIndex];
+                int randomIndex = UnityEngine.Random.Range(0, availableAINames.Count);
+                string randomName = availableAINames[randomIndex];
 
                 GameObject rivalCar = Instantiate(AICarPrefab, startPositions[i].position, startPositions[i].rotation);
                 rivalCar.GetComponent<EngineAudio>().carController = rivalCar.GetComponent<CarController>();
                 rivalCar.GetComponent<CarAI>().AIName = randomName;
                 rivalCar.gameObject.name = "AI "+randomName; 
                 usedNames.Add(randomName);
-                availableNames.RemoveAt(randomIndex);
+                availableAINames.RemoveAt(randomIndex);
                 vehiclePositions.Add(rivalCar);
 
                 OnAISpawned?.Invoke(rivalCar);
@@ -140,6 +139,7 @@ public class RaceManager : MonoBehaviour
         }
     }
 
+    // Acción que se invoca cuando la cuenta atrás acaba
     void OnCountdownFinished()
     {
         // Activar la variable canMove de cada coche
@@ -153,6 +153,7 @@ public class RaceManager : MonoBehaviour
         }
     }
 
+    // Actualizar posiciones en carrera 
     private void UpdateRacePositions()
     {
         // Separa los coches terminados de los no terminados
@@ -188,14 +189,13 @@ public class RaceManager : MonoBehaviour
         vehiclePositions.AddRange(unfinishedCars);
     }
 
+    // Comparar 2 coches para determinar su posición relativa en carrera (-1 = A delante de B, 1 = A detras de B, 0 = posicion de A igual a posicion de B)
     private int CompareCars(GameObject carA, GameObject carB)
     {
-        // Compara los coches en función de su posición en la carrera
-
         TrackCheckpoints checkpointsA = carA.GetComponent<TrackCheckpoints>();
         TrackCheckpoints checkpointsB = carB.GetComponent<TrackCheckpoints>();
 
-        // Comprueba la vuelta actual
+        // Comprueba la vuelta actual de los 2 coches
         int lapA = checkpointsA.currentLap;
         int lapB = checkpointsB.currentLap;
 
@@ -231,6 +231,7 @@ public class RaceManager : MonoBehaviour
         return 0; // Los coches están en la misma posición
     }
 
+    // Actualizar tabla de resultados
     private void UpdateTable()
     {
         Canvas canvasWithUIManager = FindObjectOfType<UIManager>().GetComponentInParent<Canvas>();
@@ -246,6 +247,7 @@ public class RaceManager : MonoBehaviour
         }
     }
 
+    // Mostrar tabla de resultados
     IEnumerator ShowResults()
     {
         yield return new WaitForSeconds(0.5f);

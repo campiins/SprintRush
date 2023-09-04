@@ -36,7 +36,7 @@ public class OptionsMenu : MonoBehaviour
     {
         Debug.Log("Salir al menu...");
         SceneManager.LoadScene("MainMenu");
-        AudioListener.pause = false; // Reanudar audio
+        AudioListener.pause = false;
     }
 
     public void ExitControls()
